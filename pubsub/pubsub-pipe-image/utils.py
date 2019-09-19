@@ -21,49 +21,32 @@ import collections
 import datetime
 import time
 
-from apiclient import discovery
 import dateutil.parser
-import httplib2
-from oauth2client.client import GoogleCredentials
+from google.cloud import bigquery, pubsub
 
-SCOPES = ['https://www.googleapis.com/auth/bigquery',
-          'https://www.googleapis.com/auth/pubsub']
 NUM_RETRIES = 3
 
-
-
-def get_credentials():
-    """Get the Google credentials needed to access our services."""
-    credentials = GoogleCredentials.get_application_default()
-    if credentials.create_scoped_required():
-            credentials = credentials.create_scoped(SCOPES)
-    return credentials
-
-
-def create_bigquery_client(credentials):
+def create_bigquery_client():
     """Build the bigquery client."""
-    http = httplib2.Http()
-    credentials.authorize(http)
-    return discovery.build('bigquery', 'v2', http=http)
+    return bigquery.Client()
 
-
-def create_pubsub_client(credentials):
+def create_pubsub_publisher_client():
     """Build the pubsub client."""
-    http = httplib2.Http()
-    credentials.authorize(http)
-    return discovery.build('pubsub', 'v1beta2', http=http)
+    return pubsub.PublisherClient()
 
+def create_pubsub_subscriber_client():
+    """Build the pubsub subscriber client."""
+    return pubsub.SubscriberClient()
 
 def flatten(lst):
     """Helper function used to massage the raw tweet data."""
     for el in lst:
         if (isinstance(el, collections.Iterable) and
-                not isinstance(el, basestring)):
+                not isinstance(el, str)):
             for sub in flatten(el):
                 yield sub
         else:
             yield el
-
 
 def cleanup(data):
     """Do some data massaging."""
@@ -100,22 +83,20 @@ def cleanup(data):
     else:
         return data
 
-
-def bq_data_insert(bigquery, project_id, dataset, table, tweets):
+def bq_data_insert(bq_client, project_id, dataset, table, tweets):
     """Insert a list of tweets into the given BigQuery table."""
     try:
-        rowlist = []
-        # Generate the data that will be sent to BigQuery
-        for item in tweets:
-            item_row = {"json": item}
-            rowlist.append(item_row)
-        body = {"rows": rowlist}
+        table_ref = bigquery.TableReference.from_string(
+            table_id='{}.{}'.format(dataset, table),
+            default_project=project_id
+        )
+
         # Try the insertion.
-        response = bigquery.tabledata().insertAll(
-                projectId=project_id, datasetId=dataset,
-                tableId=table, body=body).execute(num_retries=NUM_RETRIES)
-        # print "streaming response: %s %s" % (datetime.datetime.now(), response)
+        response = bq_client.insert_rows_json(
+            table=table_ref,
+            json_rows=tweets,
+            ignore_unknown_values=True
+        )
         return response
-        # TODO: 'invalid field' errors can be detected here.
-    except Exception, e1:
-        print "Giving up: %s" % e1
+    except Exception as e1:
+        print("Giving up: {}".format(e1))

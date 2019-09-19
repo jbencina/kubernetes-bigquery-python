@@ -22,8 +22,8 @@ import os
 script = os.environ['PROCESSINGSCRIPT']
 
 if script == 'pubsub-to-bigquery':
-    os.system("python pubsub-to-bigquery.py")
+    os.system("python3 pubsub_to_bigquery.py")
 elif script == 'twitter-to-pubsub':
-    os.system("python twitter-to-pubsub.py")
+    os.system("python3 twitter_to_pubsub.py")
 else:
-    print "unknown script %s" % script
+    print("unknown script {}".format(script))

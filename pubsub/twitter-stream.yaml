@@ -30,5 +30,5 @@ spec:
           value: xxxx
         - name: ACCESSTOKENSEC
           value: xxxx
-        - name: TWSTREAMMODE
-          value: sample
+        - name: TWKEYWORDS
+          value: key1,key2,key3
