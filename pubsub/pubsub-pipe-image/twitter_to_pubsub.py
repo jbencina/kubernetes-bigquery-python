@@ -80,9 +80,5 @@ if __name__ == '__main__':
     stream = Stream(auth, listener)
 
     keywords = [s.strip() for s in os.environ['TWKEYWORDS'].split(',')]
-<<<<<<< HEAD
     languages = [s.strip() for s in os.environ['TWLANGUAGE'].split(',')]
-=======
-    languages = os.environ['TWKEYWORDS']
->>>>>>> 152af226aa273efd90ab17c57327bd55da8a4305
     stream.filter(track=keywords, languages=languages)
