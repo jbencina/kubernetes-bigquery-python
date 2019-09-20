@@ -20,6 +20,16 @@
     "mode": "NULLABLE"
   },
   {
+    "name": "full_text",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "display_text_range",
+    "type": "INTEGER",
+    "mode": "REPEATED"
+  },
+  {
     "name": "source",
     "type": "STRING",
     "mode": "NULLABLE"
