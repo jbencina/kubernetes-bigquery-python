@@ -1,0 +1,17 @@
+{
+  "name": "extended_tweet",
+  "type": "RECORD",
+  "mode": "NULLABLE",
+  "fields": [
+    {
+      "name": "full_text",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "display_text_range",
+      "type": "INTEGER",
+      "mode": "REPEATED"
+    }
+  ]
+}

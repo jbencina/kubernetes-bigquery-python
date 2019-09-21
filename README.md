@@ -51,6 +51,7 @@ bq mk <your-dataset-name>
 ```
 bq mk -t <your-dataset-name>.<your-table-name> bigquery-setup/schema.json
 ```
+This repo includes a `bigquery-setup/make_schema.py` file that enables the modular construction of the BigQuery schema file. The Twitter API contains some recursive elements where objects like retweeted_status contain the entire Tweet object again. This makes working on a single schema file confusing and error prone. Instead, you can edit the individual JSON files which are combined to build up a master `schema.json` file.
 
 ## Updating YAML
 1. Edit `twitter-stream.py` to update the Twitter API settings, PubSub topic, and tracking keyword.

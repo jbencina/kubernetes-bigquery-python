@@ -1,0 +1,225 @@
+[
+  {
+    "name": "created_at",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "id",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "id_str",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "text",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "display_text_range",
+    "type": "INTEGER",
+    "mode": "REPEATED"
+  },
+  {
+    "name": "source",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "truncated",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "in_reply_to_status_id",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "in_reply_to_status_id_str",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "in_reply_to_user_id",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "in_reply_to_user_id_str",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "in_reply_to_screen_name",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "coordinates",
+    "type": "RECORD",
+    "mode": "NULLABLE",
+    "fields": [
+      {
+        "name": "type",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "coordinates",
+        "type": "FLOAT",
+        "mode": "REPEATED"
+      }
+    ]
+  },
+  {
+    "name": "place",
+    "type": "RECORD",
+    "mode": "NULLABLE",
+    "fields": [
+      {
+        "name": "id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "url",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "place_type",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "name",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "full_name",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "country_code",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "country",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "bounding_box",
+        "type": "RECORD",
+        "mode": "NULLABLE",
+        "fields": [
+          {
+            "name": "type",
+            "type": "STRING",
+            "mode": "NULLABLE"
+          },
+          {
+            "name": "coordinates",
+            "type": "FLOAT",
+            "mode": "REPEATED"
+          }
+        ]
+      },
+      {
+        "name": "attributes",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      }
+    ]
+  },
+  {
+    "name": "quoted_status_id",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "quoted_status_id_str",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "is_quote_status",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "quote_count",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "reply_count",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "retweet_count",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "favorite_count",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "favorited",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "retweeted",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "possibly_sensitive",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "filter_level",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "lang",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "matching_rules",
+    "type": "RECORD",
+    "mode": "REPEATED",
+    "fields": [
+      {
+        "name": "tag",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "id_str",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      }
+    ]
+  }
+]

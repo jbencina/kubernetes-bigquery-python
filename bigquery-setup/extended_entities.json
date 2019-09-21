@@ -1,0 +1,164 @@
+{
+  "name": "extended_entities",
+  "type": "RECORD",
+  "mode": "NULLABLE",
+  "fields": [
+    {
+      "name": "media",
+      "type": "RECORD",
+      "mode": "REPEATED",
+      "fields": [
+        {
+          "name": "display_url",
+          "type": "STRING",
+          "mode": "NULLABLE"
+        },
+        {
+          "name": "expanded_url",
+          "type": "STRING",
+          "mode": "NULLABLE"
+        },
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "mode": "NULLABLE"
+        },
+        {
+          "name": "id_str",
+          "type": "STRING",
+          "mode": "NULLABLE"
+        },
+        {
+          "name": "indices",
+          "type": "INTEGER",
+          "mode": "REPEATED"
+        },
+        {
+          "name": "media_url",
+          "type": "STRING",
+          "mode": "NULLABLE"
+        },
+        {
+          "name": "media_url_https",
+          "type": "STRING",
+          "mode": "NULLABLE"
+        },
+        {
+          "name": "sizes",
+          "type": "RECORD",
+          "mode": "NULLABLE",
+          "fields": [
+            {
+              "name": "small",
+              "type": "RECORD",
+              "mode": "NULLABLE",
+              "fields": [
+                {
+                  "name": "h",
+                  "type": "INTEGER",
+                  "mode": "NULLABLE"
+                },
+                {
+                  "name": "resize",
+                  "type": "STRING",
+                  "mode": "NULLABLE"
+                },
+                {
+                  "name": "w",
+                  "type": "INTEGER",
+                  "mode": "NULLABLE"
+                }
+              ]
+            },
+            {
+              "name": "large",
+              "type": "RECORD",
+              "mode": "NULLABLE",
+              "fields": [
+                {
+                  "name": "h",
+                  "type": "INTEGER",
+                  "mode": "NULLABLE"
+                },
+                {
+                  "name": "resize",
+                  "type": "STRING",
+                  "mode": "NULLABLE"
+                },
+                {
+                  "name": "w",
+                  "type": "INTEGER",
+                  "mode": "NULLABLE"
+                }
+              ]
+            },
+            {
+              "name": "medium",
+              "type": "RECORD",
+              "mode": "NULLABLE",
+              "fields": [
+                {
+                  "name": "h",
+                  "type": "INTEGER",
+                  "mode": "NULLABLE"
+                },
+                {
+                  "name": "resize",
+                  "type": "STRING",
+                  "mode": "NULLABLE"
+                },
+                {
+                  "name": "w",
+                  "type": "INTEGER",
+                  "mode": "NULLABLE"
+                }
+              ]
+            },
+            {
+              "name": "thumb",
+              "type": "RECORD",
+              "mode": "NULLABLE",
+              "fields": [
+                {
+                  "name": "h",
+                  "type": "INTEGER",
+                  "mode": "NULLABLE"
+                },
+                {
+                  "name": "resize",
+                  "type": "STRING",
+                  "mode": "NULLABLE"
+                },
+                {
+                  "name": "w",
+                  "type": "INTEGER",
+                  "mode": "NULLABLE"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "source_status_id",
+          "type": "INTEGER",
+          "mode": "NULLABLE"
+        },
+        {
+          "name": "source_status_id_str",
+          "type": "STRING",
+          "mode": "NULLABLE"
+        },
+        {
+          "name": "type",
+          "type": "STRING",
+          "mode": "NULLABLE"
+        },
+        {
+          "name": "url",
+          "type": "STRING",
+          "mode": "NULLABLE"
+        }
+      ]
+    }
+  ]
+}
