@@ -5,7 +5,7 @@ through the end of the debate.
 ## Table Information
 Capture criteria: English tweets mentioning `debate, debates, biden, trump`
 
-Table Name: `jbencina-144002.debates_2020.first_debate`
+Table Name: `jbencina-144002.debates_2020.first_debate` ([Link](https://console.cloud.google.com/bigquery?project=jbencina-144002&p=jbencina-144002&d=debates_2020&t=first_debate&page=table))
 
 Schmea: Full Twitter API [Link](https://developer.twitter.com/en/docs/twitter-api/v1/data-dictionary/overview/tweet-object)
 
