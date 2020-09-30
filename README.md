@@ -2,7 +2,7 @@
 This project builds a scalable flow to capture real-time Twitter data using a stack of:
 - Google Kubernetes
 - Google PubSub
-- Google BigQuery
+- Google BigQuery (Streaming)
 - Google Cloud Build & Container Registry
 - Python libraries (Tweepy & Google Cloud SDK)
 
@@ -20,7 +20,7 @@ Originally forked from https://github.com/GoogleCloudPlatform/kubernetes-bigquer
 - Removed redis subdirectory
 - Removed Google documentation and added this documentation
 
-# Instructions
+# Setup Instructions
 Prior to running, ensure that your local instance of Google Cloud SDK is properly configured for your project. https://cloud.google.com/sdk/install. This includes:
 - Installing the SDK
 - Authenticating to your account
@@ -28,49 +28,93 @@ Prior to running, ensure that your local instance of Google Cloud SDK is properl
 
 Additionally, you will need a valid Google Cloud project that is set up with payment information or has an active free trial.
 
-## Building Docker image
-This step is needed the first time you run this project as the one available from Google does not contain any of the enhancements in this repository.
-1. Navigate to `pubsub/pubsub-pipe-image`
-2. Run the command below to initiate the Google Cloud Build process for the Docker image which will run in Kubernetes. Increment the version number if future modifications are performed which require a new build
-```
-gcloud builds submit --tag gcr.io/[PROJECT_ID]/pubsub_bq:v1 .
+## Create the Docker image
+This step is needed the first time you run this project as the one available from Google does not contain any of the enhancements in this repository. Choose any version tag you'd like for your project.
+
+```bash
+cd pubsub/pubsub-pipe-image
+gcloud builds submit --tag gcr.io/[PROJECT_ID]/pubsub_bq:v1
 ```
 
 ## Create a PubSub topic
 The PubSub topic will act as a buffer to accept streaming updates from the Twitter API and give us some time to ingest into BigQuery
-```
+
+```bash
 gcloud pubsub topics create <your-topic-name>
 ```
 
 ## Create BigQuery table
-1. Create the BigQuery dataset if it does not already exist
-```
+Create the BigQuery table + dataset using the supplied schema file
+```bash
 bq mk <your-dataset-name>
-```
-2. Create the BigQuery table using the schema file
-```
 bq mk -t <your-dataset-name>.<your-table-name> bigquery-setup/schema.json
 ```
-This repo includes a `bigquery-setup/make_schema.py` file that enables the modular construction of the BigQuery schema file. The Twitter API contains some recursive elements where objects like retweeted_status contain the entire Tweet object again. This makes working on a single schema file confusing and error prone. Instead, you can edit the individual JSON files which are combined to build up a master `schema.json` file.
+
+This repo includes a `bigquery-setup/make_schema.py` file that enables the modular construction of the BigQuery schema file. You can edit the individual JSON files which are combined to build up a master `schema.json` file.
 
 ## Updating YAML
-1. Edit `twitter-stream.py` to update the Twitter API settings, PubSub topic, and tracking keyword.
-2. Edit `bigquery-controller.yaml` to update the destination BigQuery settings
+1. Edit `twitter-stream.py` to update the Twitter API settings, PubSub topic, Docker image, and tracking keyword.
+2. Edit `bigquery-controller.yaml` to update the destination BigQuery settings and Docker image
 
-In both steps, ensure you've supplied the updated image path from the prior step. You can increase the number of BigQuery replicas as needed but do not add more than one twitter-stream pod.
+## Create Kubernetes cluster
 
-## Launching Pods
-1. Run the following to create a Kubernetes cluster to run the application. This cluster will have API access to PubSub and BigQuery. Substitute your project ID below. I found that the below configuration suffices for 1 streaming pod + 2 BQ pods for tracking most topics.
-```
-gcloud beta container --project "[PROJECT_ID]" clusters create "standard-cluster-1" --zone "us-east1-b" --no-enable-basic-auth --cluster-version "1.13.7-gke.8" --machine-type "n1-standard-1" --image-type "COS" --disk-type "pd-standard" --disk-size "100" --metadata disable-legacy-endpoints=true --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/bigquery","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/pubsub","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" --num-nodes "2" --enable-cloud-logging --enable-cloud-monitoring --enable-ip-alias --network "projects/[PROJECT_ID]/global/networks/default" --subnetwork "projects/[PROJECT_ID]/regions/us-east1/subnetworks/default" --default-max-pods-per-node "110" --addons HorizontalPodAutoscaling,HttpLoadBalancing --enable-autoupgrade --enable-autorepair
+Create the Kubernetes cluster using the following template. Don't forget to substitute **[PROJECT_ID]** with your own project ID. Change the region as necessary. You can also create this in the UI.
+
+```bash
+gcloud beta container --project "[PROJECT_ID]" clusters create "cluster-debate-clone-1" --zone "us-west1-b" --no-enable-basic-auth --cluster-version "1.15.12-gke.20" --machine-type "e2-medium" --image-type "COS" --disk-type "pd-standard" --disk-size "100" --metadata disable-legacy-endpoints=true --scopes "https://www.googleapis.com/auth/cloud-platform" --max-pods-per-node "110" --num-nodes "3" --enable-stackdriver-kubernetes --enable-ip-alias --network "projects/[PROJECT_ID]/global/networks/default" --subnetwork "projects/[PROJECT_ID]/regions/us-west1/subnetworks/default" --default-max-pods-per-node "110" --no-enable-master-authorized-networks --addons HorizontalPodAutoscaling,HttpLoadBalancing --enable-autoupgrade --enable-autorepair --max-surge-upgrade 1 --max-unavailable-upgrade
 ```
 
-2. Launch the pods
-```
+## Launch the Kubenetes workflow
+
+First register the Kubernetes cluster once live and then submit the two worflow YAML files.
+
+```bash
+cd pubsub
+gcloud container clusters get-credentials [CLUSTER_NAME]
 kubectl create -f bigquery-controller.yaml
 kubectl create -f twitter-stream.yaml
 ```
-3. Monitor the status of your pods via the Google Cloud Kubernetes UI or by typing
+Monitor the status of your pods via the Google Cloud Kubernetes UI or by typing
 ```
 kubectl get pods  -o wide
+```
+
+## Validate results
+
+Assuming all workflows are running you should start seeing new data loading into BigQuery
+
+```bash
+bq query 'select COUNT(*) FROM dataset.tablename'
+
++-------+
+|  f0_  |
++-------+
+| 16400 |
++-------+
+```
+
+# Querying the data
+
+There are a few important caveats to the data collected
+1. There are likely duplicate entries in BigQuery. This is because multiple workers may grab the same message. Dedup on Tweet ID
+2. Most Tweets are retweets. Filter for unique with `retweeted_status.id IS NULL`
+3. Tweets over 140 characters are truncated with `...`. These are typically retweets but some original tweets may also exceed the limit. Use `extended_tweet.full_text` to capture the full tweet.
+4. The data has many instances of Unicode
+
+Follow the Twitter API guide for the most detailed field explainations https://developer.twitter.com/en/docs/twitter-api/v1/data-dictionary/overview/tweet-object
+
+## Sample Query
+
+This is a sample query focusing on the core elements of the data
+
+```sql
+SELECT
+  created_at,
+  id,
+  user.name,
+  retweeted_status.id IS NOT NULL is_retweet,
+  retweeted_status.text AS retweeted_text,
+  COALESCE(extended_tweet.full_text, text) AS text
+FROM `dataset.tablename`
+LIMIT 1000;
 ```
