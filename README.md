@@ -6,79 +6,91 @@ This project builds a scalable flow to capture real-time Twitter data using a st
 - Google Cloud Build & Container Registry
 - Python libraries (Tweepy & Google Cloud SDK)
 
-Originally forked from https://github.com/GoogleCloudPlatform/kubernetes-bigquery-python. This fork adds enhancements to the original Google repo which has not been updated in some time. It contains an updated schema for the BigQuery table which matches the latest Twitter API and also updates the code to Python 3 with the latest libraries.
+Originally forked from https://github.com/GoogleCloudPlatform/kubernetes-bigquery-python. This fork adds enhancements to the original Google repo which has not been updated in some time:
+- Updated `bigquery-setup/schema.json` to latest available schema found in Twitter API docs
+- Moved keyword terms to `twitter-stream.yaml` under the field `TWKEYWORDS` to allow for adjustment without rebuild
+- Updated script to use latest Google SDK Python library and avoid oauth2 library issues + Python 3.x
 
-# Changes
+# Instructions
+This repo uses a guided bash script for easier setup.
 
-## Major Changes
-- Updated `bigquery-setup/schema.json` to latest available schema found in Twitter API docs (**As of 2019-09-15**)
-- Moved keyword terms to `twitter-stream.yaml` under the field `TWKEYWORDS`
-- Updated script to use latest Google SDK Python library and avoid oauth2 library issues
-
-## Minor Changes
-- Updated code to Python 3
-- Removed redis subdirectory
-- Removed Google documentation and added this documentation
-
-# Setup Instructions
+## Prerequisite: Install Google Cloud SDK
 Prior to running, ensure that your local instance of Google Cloud SDK is properly configured for your project. https://cloud.google.com/sdk/install. This includes:
 - Installing the SDK
 - Authenticating to your account
 - Adding your project
 
 Additionally, you will need a valid Google Cloud project that is set up with payment information or has an active free trial.
+## Prerequisite: Obtain Twitter development API keys
+Head over to https://developers.twitter.com and create a new application to obtain the following keys & tokens:
+1. API key
+2. API secret key
+3. Access token
+4. Access token secet
 
-## Create the Docker image
-This step is needed the first time you run this project as the one available from Google does not contain any of the enhancements in this repository. Choose any version tag you'd like for your project.
+Put all 4 items in their own line, in this order, in a file called `twitter.key`. This file will be parsed in sequence by the setup script to populate values.
+
+## Step 1: Using the guided script
+The bash script will walk you through each step in an optional approach to create all of the necessary resources on Google Cloud platform. Each step is optional if you already have a resource created.
+
+1. Launch the script using `sh make-environment.sh` and enter your GCP project id. This will update the gcloud sdk for you.
+```bash
+sh make-environment.sh
+GCP Project ID: jbencina-144002
+Updated property [core/project].
+```
+
+2. Next, you are prompted to create a container image. If you do not already have one, press Y and enter the tag name. This will build and upload to Google Container Registry.
+```bash
+Build new Google Container Image? (Y/n): y
+Image tag: v1
+# Lots of output as build progresses. You should see the final line containing something like gcr.io/yourproject-12345/pubsub_bq:v1  SUCCESS
+```
+3. Next, create a BigQuery dataset & table. This automatically uses the schema specified under `bigquery-setup/schema.json`
+```bash
+Create Google BigQuery table? (Y/n): Y
+BQ Dataset Name: testds
+BQ Table Name: testtable
+Dataset 'yourproject-12345:testds' successfully created.
+Table 'yourproject-12345:testds.testtable' successfully created.
+```
+
+4. Next, create the PubSub topic. This will show an error if the topic is new because it will try to delete an existing one under the same name first.
+```bash
+Create Google PubSub Topic? (Y/n): Y
+PubSub Topic Name: mytopic
+ERROR: Failed to delete topic [projects/jbencina-144002/topics/mytopic]: Resource not found (resource=mytopic).
+ERROR: (gcloud.pubsub.topics.delete) Failed to delete the following: [mytopic].
+Created topic [projects/jbencina-144002/topics/mytopic].
+```
+
+5. Next, create the Kubernetes cluster by supplying a name. This uses small instances to help minimize cost. 2 nodes is generally fine unless you see some performance impact.
+```bash
+Create Google Kubernetes Cluster? (Y/n): Y
+Cluster Name: test
+Number of nodes (2 recommended): 2
+# Lots of output. Should show success after 2-3 minutes to start up cluster
+```
+
+6. Lastly, the script will create the `bigquery-controller.yaml` and `twitter-stream.yaml` file for you. If you skipped any of the previous steps, you will be prompted for the input. Otherwise, prior entries are recycled.
+```bash
+Number of PubSub -> BQ Nodes (2 recommended): 1
+Keywords to track (Comma separated): test,topic
+```
+You are now ready to push the flow to kubernetes
+
+## Step 2: Deploy to Kubernetes
+
+Simply run `sh deploy-environment.sh` to upload the data to Kubernetes. You can check the current status on the GCP Cloud Console or by running `kubectl get pods  -o wide` from the CLI. If this takes more than a few minutes, you may have to try deleting the workflows & redeploying or possibly recreating the cluster.
 
 ```bash
-cd pubsub/pubsub-pipe-image
-gcloud builds submit --tag gcr.io/[PROJECT_ID]/pubsub_bq:v1
+sh push-environment.sh
+deployment.apps/bigquery-controller created
+deployment.apps/twitter-stream created
+NAME                                   READY   STATUS              RESTARTS   AGE   IP       NODE                                  NOMINATED NODE   READINESS GATES
+bigquery-controller-xxx   0/1     ContainerCreating   0          1s    <none>   gke-test-default-pool-xxx  <none>           <none>
+twitter-stream-xxx         0/1     ContainerCreating   0          1s    <none>   gke-test-default-pool-xxx   <none>           <none>
 ```
-
-## Create a PubSub topic
-The PubSub topic will act as a buffer to accept streaming updates from the Twitter API and give us some time to ingest into BigQuery
-
-```bash
-gcloud pubsub topics create <your-topic-name>
-```
-
-## Create BigQuery table
-Create the BigQuery table + dataset using the supplied schema file
-```bash
-bq mk <your-dataset-name>
-bq mk -t <your-dataset-name>.<your-table-name> bigquery-setup/schema.json
-```
-
-This repo includes a `bigquery-setup/make_schema.py` file that enables the modular construction of the BigQuery schema file. You can edit the individual JSON files which are combined to build up a master `schema.json` file.
-
-## Updating YAML
-1. Edit `twitter-stream.py` to update the Twitter API settings, PubSub topic, Docker image, and tracking keyword.
-2. Edit `bigquery-controller.yaml` to update the destination BigQuery settings and Docker image
-
-## Create Kubernetes cluster
-
-Create the Kubernetes cluster using the following template. Don't forget to substitute **[PROJECT_ID]** with your own project ID. Change the region as necessary. You can also create this in the UI.
-
-```bash
-gcloud beta container --project "[PROJECT_ID]" clusters create "cluster-debate-clone-1" --zone "us-west1-b" --no-enable-basic-auth --cluster-version "1.15.12-gke.20" --machine-type "e2-medium" --image-type "COS" --disk-type "pd-standard" --disk-size "100" --metadata disable-legacy-endpoints=true --scopes "https://www.googleapis.com/auth/cloud-platform" --max-pods-per-node "110" --num-nodes "3" --enable-stackdriver-kubernetes --enable-ip-alias --network "projects/[PROJECT_ID]/global/networks/default" --subnetwork "projects/[PROJECT_ID]/regions/us-west1/subnetworks/default" --default-max-pods-per-node "110" --no-enable-master-authorized-networks --addons HorizontalPodAutoscaling,HttpLoadBalancing --enable-autoupgrade --enable-autorepair --max-surge-upgrade 1 --max-unavailable-upgrade
-```
-
-## Launch the Kubenetes workflow
-
-First register the Kubernetes cluster once live and then submit the two worflow YAML files.
-
-```bash
-cd pubsub
-gcloud container clusters get-credentials [CLUSTER_NAME]
-kubectl create -f bigquery-controller.yaml
-kubectl create -f twitter-stream.yaml
-```
-Monitor the status of your pods via the Google Cloud Kubernetes UI or by typing
-```
-kubectl get pods  -o wide
-```
-
 ## Validate results
 
 Assuming all workflows are running you should start seeing new data loading into BigQuery
