@@ -35,7 +35,7 @@ def create_subscription(pubsub_sub, project_name, sub_name):
     """Creates a new subscription to a given topic."""
     print("using pubsub topic: {}".format(PUBSUB_TOPIC))
     path = pubsub_sub.subscription_path(project_name, sub_name)
-    pubsub_sub.create_subscription(path, PUBSUB_TOPIC)
+    pubsub_sub.create_subscription(request={'name': path, 'topic': PUBSUB_TOPIC})
 
 def pull_messages(pubsub_sub, project_name, sub_name):
     """Pulls messages from a given subscription."""
@@ -44,7 +44,7 @@ def pull_messages(pubsub_sub, project_name, sub_name):
     tweets = []
 
     try:
-        resp = pubsub_sub.pull(subscription_path, max_messages=BATCH_SIZE)
+        resp = pubsub_sub.pull(request={'subscription': subscription_path, 'max_messages': BATCH_SIZE})
     except Exception as e:
         print("Exception: {}".format(e))
         time.sleep(0.5)
@@ -58,7 +58,7 @@ def pull_messages(pubsub_sub, project_name, sub_name):
                 base64.urlsafe_b64decode(msg.message.data)
             )
             ack_ids.append(msg.ack_id)
-        pubsub_sub.acknowledge(subscription_path, ack_ids)
+        pubsub_sub.acknowledge(request={'subscription': subscription_path, 'ack_ids': ack_ids})
     return tweets
 
 def write_to_bq(pubsub_sub, pubsub_pub, sub_name, bigquery):
@@ -73,12 +73,11 @@ def write_to_bq(pubsub_sub, pubsub_pub, sub_name, bigquery):
             if twmessages:
                 for res in twmessages:
                     try:
-                        tweet = json.loads(res, encoding='utf8')
+                        tweet = json.loads(res)
+                        mtweet = utils.cleanup(tweet)
+                        tweets.append(mtweet)
                     except Exception as bqe:
-                        print(bqe)
-                    
-                    mtweet = utils.cleanup(tweet)
-                    tweets.append(mtweet)
+                        print(f'Unable to process tweet from Pubsub: {bqe}')
             else:
                 print('sleeping...')
                 time.sleep(WAIT)
