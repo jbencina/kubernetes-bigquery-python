@@ -105,13 +105,14 @@ bq query 'select COUNT(*) FROM dataset.tablename'
 +-------+
 ```
 
-# Querying the data
+# Date notes
 
 There are a few important caveats to the data collected
-1. There are likely duplicate entries in BigQuery. This is because multiple workers may grab the same message. Dedup on Tweet ID
+1. There are likely duplicate entries in BigQuery. This is because multiple workers may grab the same message. Dedup on Tweet ID. If you are only using 1 pubsub-to-bigquery instance this should not be a problem.
 2. Most Tweets are retweets. Filter for unique with `retweeted_status.id IS NULL`
 3. Tweets over 140 characters are truncated with `...`. These are typically retweets but some original tweets may also exceed the limit. Use `extended_tweet.full_text` to capture the full tweet.
 4. The data has many instances of Unicode
+5. Despite using the streaming API, there is still a rate limit imposed. You can view the GKE logs to see errors like `ERROR:root:Tweet Parse: Missing ID - b'{"limit":{"track":480788,"timestamp_ms":"1604114035737"}}\r\n'` which indicate 480,788 tweets were not sent back from the API. See more info at https://developer.twitter.com/en/docs/twitter-api/v1/tweets/filter-realtime/guides/streaming-message-types
 
 Follow the Twitter API guide for the most detailed field explainations https://developer.twitter.com/en/docs/twitter-api/v1/data-dictionary/overview/tweet-object
 
