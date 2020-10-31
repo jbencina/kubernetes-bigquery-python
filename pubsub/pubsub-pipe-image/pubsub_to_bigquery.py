@@ -23,6 +23,7 @@ import os
 import time
 
 import utils
+import logging
 
 from google.api_core.exceptions import AlreadyExists
 # Get the project ID and pubsub topic from the environment variables set in
@@ -46,7 +47,7 @@ def pull_messages(pubsub_sub, project_name, sub_name):
     try:
         resp = pubsub_sub.pull(request={'subscription': subscription_path, 'max_messages': BATCH_SIZE})
     except Exception as e:
-        print("Exception: {}".format(e))
+        logging.error(f'PubSub: Error pulling tweets - {e}')
         time.sleep(0.5)
         return
 
@@ -59,6 +60,8 @@ def pull_messages(pubsub_sub, project_name, sub_name):
             )
             ack_ids.append(msg.ack_id)
         pubsub_sub.acknowledge(request={'subscription': subscription_path, 'ack_ids': ack_ids})
+
+        logging.info(f'PubSub: Pulled {len(tweets)} tweets')
     return tweets
 
 def write_to_bq(pubsub_sub, pubsub_pub, sub_name, bigquery):
@@ -74,12 +77,16 @@ def write_to_bq(pubsub_sub, pubsub_pub, sub_name, bigquery):
                 for res in twmessages:
                     try:
                         tweet = json.loads(res)
+
+                        if tweet.get('id') is None:
+                            logging.error(f'Tweet Parse: Missing ID - {res}')
+                            raise ValueError('Missing Tweet ID')
+
                         mtweet = utils.cleanup(tweet)
                         tweets.append(mtweet)
                     except Exception as bqe:
-                        print(f'Unable to process tweet from Pubsub: {bqe}')
+                        logging.error(f'Tweet Parse: Error - {bqe}')
             else:
-                print('sleeping...')
                 time.sleep(WAIT)
 
         utils.bq_data_insert(bigquery, PROJECT_ID, os.environ['BQ_DATASET'],
@@ -91,7 +98,7 @@ if __name__ == '__main__':
     topic_info = PUBSUB_TOPIC.split('/')
     topic_name = topic_info[-1]
     sub_name = "tweets-%s" % topic_name
-    print("starting write to BigQuery....")
+    logging.info("Starting write to BigQuery....")
 
     bigquery = utils.create_bigquery_client()
     pubsub_pub = utils.create_pubsub_publisher_client()
@@ -99,8 +106,8 @@ if __name__ == '__main__':
     try:
         create_subscription(pubsub_sub, PROJECT_ID, sub_name)
     except AlreadyExists:
-        print('Subscription already exists')
+        logging.info('Subscription already exists')
     except Exception as e:
-        print(e)
+        logging.error(e)
     write_to_bq(pubsub_sub, pubsub_pub, sub_name, bigquery)
-    print('exited write loop')
+    logging.info('Exited write loop')

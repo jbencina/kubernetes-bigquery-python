@@ -7,7 +7,7 @@
   {
     "name": "id",
     "type": "INTEGER",
-    "mode": "NULLABLE"
+    "mode": "REQUIRED"
   },
   {
     "name": "id_str",

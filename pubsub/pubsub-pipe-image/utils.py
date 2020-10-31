@@ -20,6 +20,7 @@ data to BigQuery
 import collections
 import datetime
 import time
+import logging
 
 import dateutil.parser
 from google.cloud import bigquery, pubsub
@@ -82,12 +83,18 @@ def bq_data_insert(bq_client, project_id, dataset, table, tweets):
             default_project=project_id
         )
 
+        logging.info(f'BigQuery: Inserting {len(tweets)} records')
         # Try the insertion.
         response = bq_client.insert_rows_json(
             table=table_ref,
             json_rows=tweets,
-            ignore_unknown_values=True
+            ignore_unknown_values=True,
+            skip_invalid_rows=True
         )
+
+        if response != []:
+            logging.info(f'BigQuery: Insert Error - {response}')
+
         return response
     except Exception as e1:
-        print("Giving up: {}".format(e1))
+        logging.error(f'BigQuery: General Error - {e1}')

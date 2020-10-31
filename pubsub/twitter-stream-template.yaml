@@ -35,4 +35,5 @@ spec:
           value: ${tw_token_sec}
         - name: TWKEYWORDS
           value: ${tw_keywords}
-
+        - name: TWLANGUAGES
+          value: ${tw_languages}

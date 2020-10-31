@@ -20,6 +20,8 @@ to pull in tweets and publish them to a PubSub topic.
 import base64
 import datetime
 import os
+import logging
+
 from tweepy import OAuthHandler
 from tweepy import Stream
 from tweepy.streaming import StreamListener
@@ -53,6 +55,7 @@ class StdOutListener(StreamListener):
     pubsub_pub = utils.create_pubsub_publisher_client()
 
     def write_to_pubsub(self, tw):
+        logging.info(f'PubSub: Publishing {len(tw)} tweets')
         publish(self.pubsub_pub, PUBSUB_TOPIC, tw)
 
     def on_data(self, data):
@@ -70,6 +73,7 @@ class StdOutListener(StreamListener):
         return True
 
     def on_error(self, status):
+        logging.error(f'Tweepy: Error - {status}')
         print(status)
 
 if __name__ == '__main__':
@@ -80,4 +84,6 @@ if __name__ == '__main__':
     stream = Stream(auth, listener)
 
     keywords = [s.strip() for s in os.environ['TWKEYWORDS'].split(',')]
-    stream.filter(track=keywords)
+    languages = [s.strip() for s in os.environ['TWLANGUAGES'].split(',')]
+
+    stream.filter(track=keywords, languages=languages)
